@@ -82,7 +82,7 @@ void loop()
 
   sendTemperature();
   sendHumidity();
-  sendBatteryLevel();
+  // sendBatteryLevel();
 
   gw.sleep(SLEEP_TIME); //sleep a bit
 }
