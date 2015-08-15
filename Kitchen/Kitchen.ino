@@ -8,6 +8,8 @@
 #define HUMIDITY_SENSOR_DIGITAL_PIN 3
 #define BATTERY_SENSOR_PIN A0
 
+#define BATTERY_SEND_INTERVAL 15
+
 unsigned long SLEEP_TIME = 60000; // Sleep time between reads (in milliseconds)
 
 MySensor gw;
@@ -16,7 +18,7 @@ DHT dht;
 float lastTemp;
 float lastHum;
 int oldBatteryPcnt = 0;
-int minutes = 0;
+int ticks = 0;
 
 boolean metric = true;
 MyMessage msgHum(CHILD_ID_HUM, V_HUM);
@@ -41,8 +43,10 @@ void setup()
 }
 
 void sendBatteryLevel() {
-  if(minutes % 15 == 0) {
-    minutes = 0;
+  ticks++;
+
+  if(ticks % BATTERY_SEND_INTERVAL == 0) {
+    ticks = 0;
     int sensorValue = analogRead(BATTERY_SENSOR_PIN);
     int batteryPcnt = sensorValue / 10;
 
@@ -52,14 +56,11 @@ void sendBatteryLevel() {
       oldBatteryPcnt = batteryPcnt;
     }
   }
-  else {
-    minutes++;
-  }
 }
 
 void sendTemperature() {
   float temperature = dht.getTemperature();
-  if (temperature != lastTemp) {
+  if (!isnan(temperature) && temperature != lastTemp) {
     lastTemp = temperature;
     if (!metric) {
       temperature = dht.toFahrenheit(temperature);
@@ -70,7 +71,7 @@ void sendTemperature() {
 
 void sendHumidity() {
   float humidity = dht.getHumidity();
-  if (humidity != lastHum) {
+  if (!isnan(humidity) && humidity != lastHum) {
     lastHum = humidity;
     gw.send(msgHum.set(humidity, 1));
   }
